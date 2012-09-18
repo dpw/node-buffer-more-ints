@@ -47,22 +47,15 @@ function readUInt_case(assert, hex, be) {
     // Test noAssert reads that stray off the ends of the
     // buffer. These tests can fail due to integers being to
     // big, which is fine.
-
     tooLargeIsOk(function () {
-        assert.equal(h2b(hex).readUIntBE(len, -1, true),
-                     h2b("00"+hex).readUIntBE(len, 0));
+        var expect = h2b("00"+hex).readUIntBE(len, 0);
+        assert.equal(h2b(hex).readUIntBE(len, -1, true), expect);
+        assert.equals(reverse(h2b(hex)).readUIntLE(len, 1, true), expect);
     });
     tooLargeIsOk(function () {
-        assert.equals(reverse(h2b(hex)).readUIntLE(len, 1, true),
-                      reverse(h2b("00"+hex)).readUIntLE(len, 1));
-    });
-    tooLargeIsOk(function () {
-        assert.equal(h2b(hex).readUIntBE(len, 1, true),
-                     h2b(hex+"00").readUIntBE(len, 1));
-    });
-    tooLargeIsOk(function () {
-        assert.equal(reverse(h2b(hex)).readUIntLE(len, -1, true),
-                     reverse(h2b(hex+"00")).readUIntLE(len, 0))
+        var expect = h2b(hex+"00").readUIntBE(len, 1);
+        assert.equal(h2b(hex).readUIntBE(len, 1, true), expect);
+        assert.equal(reverse(h2b(hex)).readUIntLE(len, -1, true), expect);
     });
 }
 
@@ -120,22 +113,15 @@ function readInt_case(assert, hex, be) {
     // Test noAssert reads that stray off the ends of the
     // buffer. These tests can fail due to integers being to
     // big, which is fine.
-
     tooLargeIsOk(function () {
-        assert.equal(h2b(hex).readIntBE(len, -1, true),
-                     h2b("00"+hex).readIntBE(len, 0));
+        var expect = h2b("00"+hex).readIntBE(len, 0);
+        assert.equal(h2b(hex).readIntBE(len, -1, true), expect);
+        assert.equals(reverse(h2b(hex)).readIntLE(len, 1, true), expect);
     });
     tooLargeIsOk(function () {
-        assert.equals(reverse(h2b(hex)).readIntLE(len, 1, true),
-                      reverse(h2b("00"+hex)).readIntLE(len, 1));
-    });
-    tooLargeIsOk(function () {
-        assert.equal(h2b(hex).readIntBE(len, 1, true),
-                     h2b(hex+"00").readIntBE(len, 1));
-    });
-    tooLargeIsOk(function () {
-        assert.equal(reverse(h2b(hex)).readIntLE(len, -1, true),
-                     reverse(h2b(hex+"00")).readIntLE(len, 0))
+        var expect = h2b(hex+"00").readIntBE(len, 1);
+        assert.equal(h2b(hex).readIntBE(len, 1, true), expect);
+        assert.equal(reverse(h2b(hex)).readIntLE(len, -1, true), expect);
     });
 }
 
