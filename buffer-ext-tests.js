@@ -166,11 +166,13 @@ module.exports.readInt = function (assert) {
     readInt_case(assert, "01020304050607", 0x01020304050607);
     readInt_case(assert, "1fffffffffffff", 0x1fffffffffffff);
     readInt_case(assert, "e0000000000001", -0x1fffffffffffff);
+    readInt_case(assert, "ffffffffffffff", -0x00000000000001);
 
     readInt_case(assert, "0000000000000000", 0x0000000000000000);
     readInt_case(assert, "0002030405060708", 0x0002030405060708);
     readInt_case(assert, "001fffffffffffff", 0x001fffffffffffff);
     readInt_case(assert, "ffe0000000000001", -0x001fffffffffffff);
+    readInt_case(assert, "ffffffffffffffff", -0x0000000000000001);
 
     assert.done();
 };
