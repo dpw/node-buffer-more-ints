@@ -33,7 +33,7 @@ implementation will get a speed up.
 ## Limitations
 
 As JavaScript uses IEEE754 doubles for numbers, the contiguous range
-of integers it can represent is [-2**53 - 1, 2**53 - 1].  So only
+of integers it can represent is [-2^53 - 1, 2^53 - 1].  So only
 integer widths up to 6 bytes or 48 bits can be safely read and
 written.  The buffer-ext functions will throw and exception if you try
 to read or write an integer outside this range.  The consequence of
