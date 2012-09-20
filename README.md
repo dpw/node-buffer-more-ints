@@ -7,10 +7,10 @@ The functions provided follow the same naming conventions and take the
 same arguments as the standard ones on Buffer:
 
     $ node
-   > require('buffer-ext')
-   {}
-   > new Buffer("0000deadbeef0000", "hex").readInt64BE(0).toString(16)
-   'deadbeef0000'
+    > require('buffer-ext')
+    {}
+    > new Buffer("0000deadbeef0000", "hex").readInt64BE(0).toString(16)
+    'deadbeef0000'
 
 buffer-ext also adds functions `readIntBE`, `writeIntBE`, and their LE
 and UInt counterparts, which take an initial argument giving the width
