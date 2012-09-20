@@ -3,7 +3,7 @@
     "version": "0.0.1",
     "author": "David Wragg <david@wragg.org>",
     "description": "Add support for more integer widths to Buffer",
-    "main": "buffer-ext.js",
+    "main": "buffer-more-ints.js",
     "devDependencies": {
         "nodeunit": ""
     },
