@@ -1,4 +1,4 @@
-# buffer-ext: Buffer extensions for node.js
+# buffer-more-ints: Add support for more integer widths to Buffer
 
 Node's Buffer only supports reading and writing integers of a limited
 range of widths.  This module extends Buffer with support for more

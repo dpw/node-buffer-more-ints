@@ -1,13 +1,13 @@
 {
-    "name": "buffer-ext",
+    "name": "buffer-more-ints",
     "version": "0.0.1",
     "author": "David Wragg <david@wragg.org>",
-    "description": "Add support for wider integers to Buffer",
+    "description": "Add support for more integer widths to Buffer",
     "main": "buffer-ext.js",
     "devDependencies": {
         "nodeunit": ""
     },
     "scripts" : {
-        "test" : "node ./node_modules/nodeunit/bin/nodeunit buffer-ext-tests.js"
+        "test" : "node ./node_modules/nodeunit/bin/nodeunit buffer-more-ints-tests.js"
     }
 }

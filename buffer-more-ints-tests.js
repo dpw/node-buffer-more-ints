@@ -1,6 +1,6 @@
 'use strict';
 
-require('./buffer-ext');
+require('./buffer-more-ints');
 
 // A simple abbreviation to obtain a buffer from a hex string
 function h2b(str) {
