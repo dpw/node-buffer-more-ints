@@ -7,14 +7,13 @@ function h2b(str) {
     return new Buffer(str, "hex");
 }
 
-// Reverse a buffer in-place
+// Reverse a buffer
 function reverse(buf) {
-    for (var i = 0, j = buf.length - 1; i < j; i++, j--) {
-        var t = buf[i];
-        buf[i] = buf[j];
-        buf[j] = t;
+    var res = new Buffer(buf.length);
+    for (var i = 0, j = buf.length - 1; j >= 0; i++, j--) {
+        res[i] = buf[j];
     }
-    return buf;
+    return res;
 }
 
 // Fill a buffer with distinctive data
@@ -27,74 +26,75 @@ function scrub(buf) {
     return buf;
 }
 
-// Discard exceptions due to integers being too large
-function tooLargeIsOk(f) {
-    try {
-        f();
-    }
-    catch (e) {
-        if (!/attempt to read integer too large to be safely held in a JS number/.test(e.message)) {
-            throw e;
+function xint_case(xint) {
+    return function (assert, hex, val, inexact) {
+        var readBE = "read" + xint + "BE";
+        var writeBE = "write" + xint + "BE";
+        var readLE = "read" + xint + "LE";
+        var writeLE = "write" + xint + "LE";
+
+        var len = hex.length / 2;
+
+        // Straightforward read cases
+        assert.equal(h2b(hex)[readBE](len, 0), val);
+        assert.equal(reverse(h2b(hex))[readLE](len, 0), val);
+
+        // Test straightforward writes and noAssert writes off the ends of
+        // the buffer
+        var buf = scrub(new Buffer(len));
+        buf[writeBE](len, val, 0);
+        if (!inexact) {
+            assert.equal(buf.toString("hex"), hex);
+        } else {
+            assert.equal(buf[readBE](len, 0), val);
         }
-    }
+
+        var buf2 = scrub(new Buffer(len));
+        buf2[writeBE](len, val, -1, true);
+        assert.equal(buf2.slice(0, len-1).toString("hex"),
+                     buf.slice(1, len).toString("hex"));
+        scrub(buf2);
+        buf2[writeBE](len, val, 1, true);
+        assert.equal(buf2.slice(1, len).toString("hex"),
+                     buf.slice(0, len-1).toString("hex"));
+
+        scrub(buf);
+        buf[writeLE](len, val, 0);
+        if (!inexact) {
+            assert.equal(reverse(buf).toString("hex"), hex);
+        } else {
+            assert.equal(buf[readLE](len, 0), val);
+        }
+
+        scrub(buf2);
+        buf2[writeLE](len, val, -1, true);
+        assert.equal(buf2.slice(0, len-1).toString("hex"),
+                     buf.slice(1, len).toString("hex"));
+        scrub(buf2);
+        buf2[writeLE](len, val, 1, true);
+        assert.equal(buf2.slice(1, len).toString("hex"),
+                     buf.slice(0, len-1).toString("hex"));
+
+        // Accessess off the end of the buffer should throw. Node
+        // doesn't catch negative offsets.
+        assert.throws(function () { h2b(hex)[readBE](len, 1); })
+        assert.throws(function () { reverse(h2b(hex))[readLE](len, 1); })
+        assert.throws(function () { buf[writeBE](len, val, 1); });
+        assert.throws(function () { buf[writeLE](len, val, 1); });
+
+        // Test noAssert reads that stray off the ends of the buffer.
+        var expect = h2b("00"+hex)[readBE](len, 0);
+        assert.equal(h2b(hex)[readBE](len, -1, true), expect);
+        assert.equals(reverse(h2b(hex))[readLE](len, 1, true), expect);
+
+        expect = h2b(hex+"00")[readBE](len, 1);
+        assert.equal(h2b(hex)[readBE](len, 1, true), expect);
+        assert.equal(reverse(h2b(hex))[readLE](len, -1, true), expect);
+    };
 }
 
-function uint_case(assert, hex, val) {
-    var len = hex.length / 2;
-
-    // Straightforward read cases
-    assert.equal(h2b(hex).readUIntBE(len, 0), val);
-    assert.equal(reverse(h2b(hex)).readUIntLE(len, 0), val);
-
-    // Test straightforward writes and noAssert writes off the ends of
-    // the buffer
-    var buf = scrub(new Buffer(len));
-    buf.writeUIntBE(len, val, 0);
-    assert.equal(buf.readUIntBE(len, 0), val);
-
-    var buf2 = scrub(new Buffer(len));
-    buf2.writeUIntBE(len, val, -1, true);
-    assert.equal(buf2.slice(0, len-1).toString("hex"),
-                 buf.slice(1, len).toString("hex"));
-    scrub(buf2);
-    buf2.writeUIntBE(len, val, 1, true);
-    assert.equal(buf2.slice(1, len).toString("hex"),
-                 buf.slice(0, len-1).toString("hex"));
-
-    scrub(buf);
-    buf.writeUIntLE(len, val, 0);
-    assert.equal(buf.readUIntLE(len, 0), val);
-
-    scrub(buf2);
-    buf2.writeUIntLE(len, val, -1, true);
-    assert.equal(buf2.slice(0, len-1).toString("hex"),
-                 buf.slice(1, len).toString("hex"));
-    scrub(buf2);
-    buf2.writeUIntLE(len, val, 1, true);
-    assert.equal(buf2.slice(1, len).toString("hex"),
-                 buf.slice(0, len-1).toString("hex"));
-
-    // Accessess off the end of the buffer should throw. Node doesn't
-    // catch negative offsets.
-    assert.throws(function () { h2b(hex).readUIntBE(len, 1); })
-    assert.throws(function () { reverse(h2b(hex)).readUIntLE(len, 1); })
-    assert.throws(function () { buf.writeUIntBE(len, val, 1); });
-    assert.throws(function () { buf.writeUIntLE(len, val, 1); });
-
-    // Test noAssert reads that stray off the ends of the
-    // buffer. These tests can fail due to integers being to big,
-    // which is fine.
-    tooLargeIsOk(function () {
-        var expect = h2b("00"+hex).readUIntBE(len, 0);
-        assert.equal(h2b(hex).readUIntBE(len, -1, true), expect);
-        assert.equals(reverse(h2b(hex)).readUIntLE(len, 1, true), expect);
-    });
-    tooLargeIsOk(function () {
-        var expect = h2b(hex+"00").readUIntBE(len, 1);
-        assert.equal(h2b(hex).readUIntBE(len, 1, true), expect);
-        assert.equal(reverse(h2b(hex)).readUIntLE(len, -1, true), expect);
-    });
-}
+var uint_case = xint_case("UInt");
+var int_case = xint_case("Int");
 
 module.exports.uint = function (assert) {
     uint_case(assert, "00", 0x00);
@@ -123,71 +123,14 @@ module.exports.uint = function (assert) {
 
     uint_case(assert, "00000000000000", 0x00000000000000);
     uint_case(assert, "01020304050607", 0x01020304050607);
-    uint_case(assert, "1fffffffffffff", 0x1fffffffffffff);
+    uint_case(assert, "ffffffffffffff", 0xffffffffffffff);
 
     uint_case(assert, "0000000000000000", 0x0000000000000000);
-    uint_case(assert, "0002030405060708", 0x0002030405060708);
-    uint_case(assert, "001fffffffffffff", 0x001fffffffffffff);
+    uint_case(assert, "0102030405060708", 0x0102030405060708, true);
+    uint_case(assert, "ffffffffffffffff", 0xffffffffffffffff);
 
     assert.done();
 };
-
-function int_case(assert, hex, val) {
-    var len = hex.length / 2;
-
-    // Straightforward read cases
-    assert.equal(h2b(hex).readIntBE(len, 0), val);
-    assert.equal(reverse(h2b(hex)).readIntLE(len, 0), val);
-
-    // Test straightforward writes and noAssert writes off the ends of
-    // the buffer
-    var buf = scrub(new Buffer(len));
-    buf.writeIntBE(len, val, 0);
-    assert.equal(buf.readIntBE(len, 0), val);
-
-    var buf2 = scrub(new Buffer(len));
-    buf2.writeIntBE(len, val, -1, true);
-    assert.equal(buf2.slice(0, len-1).toString("hex"),
-                 buf.slice(1, len).toString("hex"));
-    scrub(buf2);
-    buf2.writeIntBE(len, val, 1, true);
-    assert.equal(buf2.slice(1, len).toString("hex"),
-                 buf.slice(0, len-1).toString("hex"));
-
-    scrub(buf);
-    buf.writeIntLE(len, val, 0);
-    assert.equal(buf.readIntLE(len, 0), val);
-
-    scrub(buf2);
-    buf2.writeIntLE(len, val, -1, true);
-    assert.equal(buf2.slice(0, len-1).toString("hex"),
-                 buf.slice(1, len).toString("hex"));
-    scrub(buf2);
-    buf2.writeIntLE(len, val, 1, true);
-    assert.equal(buf2.slice(1, len).toString("hex"),
-                 buf.slice(0, len-1).toString("hex"));
-
-    // Accesses off the end of the buffer should throw. Node doesn't
-    // catch negative offsets.
-    assert.throws(function () { h2b(hex).readIntBE(len, 1); })
-    assert.throws(function () { reverse(h2b(hex)).readIntLE(len, 1); })
-    assert.throws(function () { buf.writeIntBE(len, val, 1); });
-    assert.throws(function () { buf.writeIntLE(len, val, 1); });
-
-    // Test noAssert reads that stray off the ends of the
-    // buffer. These tests can fail due to integers being to
-    // big, which is fine.
-    tooLargeIsOk(function () {
-        var expect = h2b("00"+hex).readIntBE(len, 0);
-        assert.equal(h2b(hex).readIntBE(len, -1, true), expect);
-        assert.equals(reverse(h2b(hex)).readIntLE(len, 1, true), expect);
-    });
-    tooLargeIsOk(function () {
-        var expect = h2b(hex+"00").readIntBE(len, 1);
-        assert.equal(h2b(hex).readIntBE(len, 1, true), expect);
-        assert.equal(reverse(h2b(hex)).readIntLE(len, -1, true), expect);
-    });
-}
 
 module.exports.int = function (assert) {
     int_case(assert, "00", 0x00);
@@ -228,15 +171,37 @@ module.exports.int = function (assert) {
 
     int_case(assert, "00000000000000", 0x00000000000000);
     int_case(assert, "01020304050607", 0x01020304050607);
-    int_case(assert, "1fffffffffffff", 0x1fffffffffffff);
-    int_case(assert, "e0000000000001", -0x1fffffffffffff);
+    int_case(assert, "7fffffffffffff", 0x7fffffffffffff);
+    int_case(assert, "80000000000000", -0x80000000000000);
     int_case(assert, "ffffffffffffff", -0x00000000000001);
 
     int_case(assert, "0000000000000000", 0x0000000000000000);
-    int_case(assert, "0002030405060708", 0x0002030405060708);
-    int_case(assert, "001fffffffffffff", 0x001fffffffffffff);
-    int_case(assert, "ffe0000000000001", -0x001fffffffffffff);
+    int_case(assert, "0102030405060708", 0x0102030405060708, true);
+    int_case(assert, "7fffffffffffffff", 0x7fffffffffffffff);
+    int_case(assert, "8000000000000000", -0x8000000000000000);
     int_case(assert, "ffffffffffffffff", -0x0000000000000001);
+
+    assert.done();
+};
+
+module.exports.isContiguousInt = function (assert) {
+    assert.equal(Buffer.isContiguousInt(0x1fffffffffffff), true);
+    assert.equal(Buffer.isContiguousInt(0x20000000000000), false);
+    assert.equal(Buffer.isContiguousInt(-0x1fffffffffffff), true);
+    assert.equal(Buffer.isContiguousInt(-0x20000000000000), false);
+
+    assert.doesNotThrow(function () {
+        Buffer.assertContiguousInt(0x1fffffffffffff);
+    });
+    assert.throws(function () {
+        Buffer.assertContiguousInt(0x20000000000000);
+    });
+    assert.doesNotThrow(function () {
+        Buffer.assertContiguousInt(-0x1fffffffffffff);
+    });
+    assert.throws(function () {
+        Buffer.assertContiguousInt(-0x20000000000000);
+    });
 
     assert.done();
 };

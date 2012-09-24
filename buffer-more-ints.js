@@ -7,7 +7,15 @@ var SHIFT_LEFT_32 = (1 << 16) * (1 << 16);
 var SHIFT_RIGHT_32 = 1 / SHIFT_LEFT_32;
 
 // The maximum contiguous integer that can be held in a IEEE754 double
-var MAX_INT = 9007199254740991;
+var MAX_INT = 0x1fffffffffffff;
+
+Buffer.isContiguousInt = function (val) {
+    return val <= MAX_INT && val >= -MAX_INT;
+};
+
+Buffer.assertContiguousInt = function (val) {
+    assert(Buffer.isContiguousInt(val), "number cannot be represented as a contiguous integer");
+};
 
 // Check that a value is an integer within the given range
 function check_int(val, min, max) {
@@ -57,37 +65,56 @@ Buffer.prototype.writeUInt48BE = function (val, offset, noAssert) {
 };
 
 Buffer.prototype.readUInt56BE = function (offset, noAssert) {
-    var res = ((this.readUInt8(offset, noAssert) || 0) << 16 | this.readUInt16BE(offset + 1, noAssert)) * SHIFT_LEFT_32 + this.readUInt32BE(offset + 3, noAssert);
-    assert.ok(res <= MAX_INT, "attempt to read integer too large to be safely held in a JS number");
-    return res;
+    return ((this.readUInt8(offset, noAssert) || 0) << 16 | this.readUInt16BE(offset + 1, noAssert)) * SHIFT_LEFT_32 + this.readUInt32BE(offset + 3, noAssert);
 };
 
 Buffer.prototype.writeUInt56BE = function (val, offset, noAssert) {
     if (!noAssert) {
-        check_int(val, 0, 0x1fffffffffffff);
+        check_int(val, 0, 0xffffffffffffff);
         assert.ok(offset + 7 <= this.length, "attempt to write beyond end of buffer");
     }
 
-    var hi = Math.floor(val * SHIFT_RIGHT_32);
-    this.writeUInt8(hi >>> 16, offset, noAssert);
-    this.writeUInt16BE(hi & 0xffff, offset + 1, noAssert);
-    this.writeInt32BE(val & -1, offset + 3, noAssert);
+    if (val < 0x100000000000000) {
+        var hi = Math.floor(val * SHIFT_RIGHT_32);
+        this.writeUInt8(hi >>> 16, offset, noAssert);
+        this.writeUInt16BE(hi & 0xffff, offset + 1, noAssert);
+        this.writeInt32BE(val & -1, offset + 3, noAssert);
+    } else {
+        // Special case because 2^56-1 gets rounded up to 2^56
+        this[offset] = 0xff;
+        this[offset+1] = 0xff;
+        this[offset+2] = 0xff;
+        this[offset+3] = 0xff;
+        this[offset+4] = 0xff;
+        this[offset+5] = 0xff;
+        this[offset+6] = 0xff;
+    }
 };
 
 Buffer.prototype.readUInt64BE = function (offset, noAssert) {
-    var res = this.readUInt32BE(offset, noAssert) * SHIFT_LEFT_32 + this.readUInt32BE(offset + 4, noAssert);
-    assert.ok(res <= MAX_INT, "attempt to read integer too large to be safely held in a JS number");
-    return res;
+    return this.readUInt32BE(offset, noAssert) * SHIFT_LEFT_32 + this.readUInt32BE(offset + 4, noAssert);
 };
 
 Buffer.prototype.writeUInt64BE = function (val, offset, noAssert) {
     if (!noAssert) {
-        check_int(val, 0, 0x1fffffffffffff);
+        check_int(val, 0, 0xffffffffffffffff);
         assert.ok(offset + 8 <= this.length, "attempt to write beyond end of buffer");
     }
 
-    this.writeUInt32BE(Math.floor(val * SHIFT_RIGHT_32), offset, noAssert);
-    this.writeInt32BE(val & -1, offset + 4, noAssert);
+    if (val < 0x10000000000000000) {
+        this.writeUInt32BE(Math.floor(val * SHIFT_RIGHT_32), offset, noAssert);
+        this.writeInt32BE(val & -1, offset + 4, noAssert);
+    } else {
+        // Special case because 2^64-1 gets rounded up to 2^64
+        this[offset] = 0xff;
+        this[offset+1] = 0xff;
+        this[offset+2] = 0xff;
+        this[offset+3] = 0xff;
+        this[offset+4] = 0xff;
+        this[offset+5] = 0xff;
+        this[offset+6] = 0xff;
+        this[offset+7] = 0xff;
+    }
 };
 
 
@@ -134,37 +161,56 @@ Buffer.prototype.writeUInt48LE = function (val, offset, noAssert) {
 };
 
 Buffer.prototype.readUInt56LE = function (offset, noAssert) {
-    var res = ((this.readUInt8(offset + 6, noAssert) || 0) << 16 | this.readUInt16LE(offset + 4, noAssert)) * SHIFT_LEFT_32 + this.readUInt32LE(offset, noAssert);
-    assert.ok(res <= MAX_INT, "attempt to read integer too large to be safely held in a JS number");
-    return res;
+    return ((this.readUInt8(offset + 6, noAssert) || 0) << 16 | this.readUInt16LE(offset + 4, noAssert)) * SHIFT_LEFT_32 + this.readUInt32LE(offset, noAssert);
 };
 
 Buffer.prototype.writeUInt56LE = function (val, offset, noAssert) {
     if (!noAssert) {
-        check_int(val, 0, 0x1fffffffffffff);
+        check_int(val, 0, 0xffffffffffffff);
         assert.ok(offset + 7 <= this.length, "attempt to write beyond end of buffer");
     }
 
-    this.writeInt32LE(val & -1, offset, noAssert);
-    var hi = Math.floor(val * SHIFT_RIGHT_32);
-    this.writeUInt16LE(hi & 0xffff, offset + 4, noAssert);
-    this.writeUInt8(hi >>> 16, offset + 6, noAssert);
+    if (val < 0x100000000000000) {
+        this.writeInt32LE(val & -1, offset, noAssert);
+        var hi = Math.floor(val * SHIFT_RIGHT_32);
+        this.writeUInt16LE(hi & 0xffff, offset + 4, noAssert);
+        this.writeUInt8(hi >>> 16, offset + 6, noAssert);
+    } else {
+        // Special case because 2^56-1 gets rounded up to 2^56
+        this[offset] = 0xff;
+        this[offset+1] = 0xff;
+        this[offset+2] = 0xff;
+        this[offset+3] = 0xff;
+        this[offset+4] = 0xff;
+        this[offset+5] = 0xff;
+        this[offset+6] = 0xff;
+    }
 };
 
 Buffer.prototype.readUInt64LE = function (offset, noAssert) {
-    var res = this.readUInt32LE(offset + 4, noAssert) * SHIFT_LEFT_32 + this.readUInt32LE(offset, noAssert);
-    assert.ok(res <= MAX_INT, "attempt to read integer too large to be safely held in a JS number");
-    return res;
+    return this.readUInt32LE(offset + 4, noAssert) * SHIFT_LEFT_32 + this.readUInt32LE(offset, noAssert);
 };
 
 Buffer.prototype.writeUInt64LE = function (val, offset, noAssert) {
     if (!noAssert) {
-        check_int(val, 0, 0x1fffffffffffff);
+        check_int(val, 0, 0xffffffffffffffff);
         assert.ok(offset + 8 <= this.length, "attempt to write beyond end of buffer");
     }
 
-    this.writeInt32LE(val & -1, offset, noAssert);
-    this.writeUInt32LE(Math.floor(val * SHIFT_RIGHT_32), offset + 4, noAssert);
+    if (val < 0x10000000000000000) {
+        this.writeInt32LE(val & -1, offset, noAssert);
+        this.writeUInt32LE(Math.floor(val * SHIFT_RIGHT_32), offset + 4, noAssert);
+    } else {
+        // Special case because 2^64-1 gets rounded up to 2^64
+        this[offset] = 0xff;
+        this[offset+1] = 0xff;
+        this[offset+2] = 0xff;
+        this[offset+3] = 0xff;
+        this[offset+4] = 0xff;
+        this[offset+5] = 0xff;
+        this[offset+6] = 0xff;
+        this[offset+7] = 0xff;
+    }
 };
 
 
@@ -211,37 +257,56 @@ Buffer.prototype.writeInt48BE = function (val, offset, noAssert) {
 };
 
 Buffer.prototype.readInt56BE = function (offset, noAssert) {
-    var res = (((this.readInt8(offset, noAssert) || 0) << 16) + this.readUInt16BE(offset + 1, noAssert)) * SHIFT_LEFT_32 + this.readUInt32BE(offset + 3, noAssert);
-    assert.ok(res <= MAX_INT && res >= -MAX_INT, "attempt to read integer too large to be safely held in a JS number");
-    return res;
+    return (((this.readInt8(offset, noAssert) || 0) << 16) + this.readUInt16BE(offset + 1, noAssert)) * SHIFT_LEFT_32 + this.readUInt32BE(offset + 3, noAssert);
 };
 
 Buffer.prototype.writeInt56BE = function (val, offset, noAssert) {
     if (!noAssert) {
-        check_int(val, -0x1fffffffffffff, 0x1fffffffffffff);
+        check_int(val, -0x800000000000000, 0x7fffffffffffff);
         assert.ok(offset + 7 <= this.length, "attempt to write beyond end of buffer");
     }
 
-    var hi = Math.floor(val * SHIFT_RIGHT_32);
-    this.writeInt8(hi >> 16, offset, noAssert);
-    this.writeUInt16BE(hi & 0xffff, offset + 1, noAssert);
-    this.writeInt32BE(val & -1, offset + 3, noAssert);
+    if (val < 0x80000000000000) {
+        var hi = Math.floor(val * SHIFT_RIGHT_32);
+        this.writeInt8(hi >> 16, offset, noAssert);
+        this.writeUInt16BE(hi & 0xffff, offset + 1, noAssert);
+        this.writeInt32BE(val & -1, offset + 3, noAssert);
+    } else {
+        // Special case because 2^55-1 gets rounded up to 2^55
+        this[offset] = 0x7f;
+        this[offset+1] = 0xff;
+        this[offset+2] = 0xff;
+        this[offset+3] = 0xff;
+        this[offset+4] = 0xff;
+        this[offset+5] = 0xff;
+        this[offset+6] = 0xff;
+    }
 };
 
 Buffer.prototype.readInt64BE = function (offset, noAssert) {
-    var res = this.readInt32BE(offset, noAssert) * SHIFT_LEFT_32 + this.readUInt32BE(offset + 4, noAssert);
-    assert.ok(res <= MAX_INT && res >= -MAX_INT, "attempt to read integer too large to be safely held in a JS number");
-    return res;
+    return this.readInt32BE(offset, noAssert) * SHIFT_LEFT_32 + this.readUInt32BE(offset + 4, noAssert);
 };
 
 Buffer.prototype.writeInt64BE = function (val, offset, noAssert) {
     if (!noAssert) {
-        check_int(val, -0x1fffffffffffff, 0x1fffffffffffff);
+        check_int(val, -0x800000000000000000, 0x7fffffffffffffff);
         assert.ok(offset + 8 <= this.length, "attempt to write beyond end of buffer");
     }
 
-    this.writeInt32BE(Math.floor(val * SHIFT_RIGHT_32), offset, noAssert);
-    this.writeInt32BE(val & -1, offset + 4, noAssert);
+    if (val < 0x8000000000000000) {
+        this.writeInt32BE(Math.floor(val * SHIFT_RIGHT_32), offset, noAssert);
+        this.writeInt32BE(val & -1, offset + 4, noAssert);
+    } else {
+        // Special case because 2^63-1 gets rounded up to 2^63
+        this[offset] = 0x7f;
+        this[offset+1] = 0xff;
+        this[offset+2] = 0xff;
+        this[offset+3] = 0xff;
+        this[offset+4] = 0xff;
+        this[offset+5] = 0xff;
+        this[offset+6] = 0xff;
+        this[offset+7] = 0xff;
+    }
 };
 
 
@@ -288,37 +353,56 @@ Buffer.prototype.writeInt48LE = function (val, offset, noAssert) {
 };
 
 Buffer.prototype.readInt56LE = function (offset, noAssert) {
-    var res = (((this.readInt8(offset + 6, noAssert) || 0) << 16) + this.readUInt16LE(offset + 4, noAssert)) * SHIFT_LEFT_32 + this.readUInt32LE(offset, noAssert);
-    assert.ok(res <= MAX_INT && res >= -MAX_INT, "attempt to read integer too large to be safely held in a JS number");
-    return res;
+    return (((this.readInt8(offset + 6, noAssert) || 0) << 16) + this.readUInt16LE(offset + 4, noAssert)) * SHIFT_LEFT_32 + this.readUInt32LE(offset, noAssert);
 };
 
 Buffer.prototype.writeInt56LE = function (val, offset, noAssert) {
     if (!noAssert) {
-        check_int(val, -0x1fffffffffffff, 0x1fffffffffffff);
+        check_int(val, -0x80000000000000, 0x7fffffffffffff);
         assert.ok(offset + 7 <= this.length, "attempt to write beyond end of buffer");
     }
 
-    this.writeInt32LE(val & -1, offset, noAssert);
-    var hi = Math.floor(val * SHIFT_RIGHT_32);
-    this.writeUInt16LE(hi & 0xffff, offset + 4, noAssert);
-    this.writeInt8(hi >> 16, offset + 6, noAssert);
+    if (val < 0x80000000000000) {
+        this.writeInt32LE(val & -1, offset, noAssert);
+        var hi = Math.floor(val * SHIFT_RIGHT_32);
+        this.writeUInt16LE(hi & 0xffff, offset + 4, noAssert);
+        this.writeInt8(hi >> 16, offset + 6, noAssert);
+    } else {
+        // Special case because 2^55-1 gets rounded up to 2^55
+        this[offset] = 0xff;
+        this[offset+1] = 0xff;
+        this[offset+2] = 0xff;
+        this[offset+3] = 0xff;
+        this[offset+4] = 0xff;
+        this[offset+5] = 0xff;
+        this[offset+6] = 0x7f;
+    }
 };
 
 Buffer.prototype.readInt64LE = function (offset, noAssert) {
-    var res = this.readInt32LE(offset + 4, noAssert) * SHIFT_LEFT_32 + this.readUInt32LE(offset, noAssert);
-    assert.ok(res <= MAX_INT && res >= -MAX_INT, "attempt to read integer too large to be safely held in a JS number");
-    return res;
+    return this.readInt32LE(offset + 4, noAssert) * SHIFT_LEFT_32 + this.readUInt32LE(offset, noAssert);
 };
 
 Buffer.prototype.writeInt64LE = function (val, offset, noAssert) {
     if (!noAssert) {
-        check_int(val, -0x1fffffffffffff, 0x1fffffffffffff);
+        check_int(val, -0x8000000000000000, 0x7fffffffffffffff);
         assert.ok(offset + 8 <= this.length, "attempt to write beyond end of buffer");
     }
 
-    this.writeInt32LE(val & -1, offset, noAssert);
-    this.writeInt32LE(Math.floor(val * SHIFT_RIGHT_32), offset + 4, noAssert);
+    if (val < 0x8000000000000000) {
+        this.writeInt32LE(val & -1, offset, noAssert);
+        this.writeInt32LE(Math.floor(val * SHIFT_RIGHT_32), offset + 4, noAssert);
+    } else {
+        // Special case because 2^55-1 gets rounded up to 2^55
+        this[offset] = 0xff;
+        this[offset+1] = 0xff;
+        this[offset+2] = 0xff;
+        this[offset+3] = 0xff;
+        this[offset+4] = 0xff;
+        this[offset+5] = 0xff;
+        this[offset+6] = 0xff;
+        this[offset+7] = 0x7f;
+    }
 };
 
 // Buffer.prototype.read{UInt,Int}8 returns undefined if the offset is

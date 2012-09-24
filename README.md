@@ -28,20 +28,28 @@ of the core Buffer functions.  Part way through writing the code, I
 discovered that node.js currently implements those in JavaScript, so
 this doesn't lead to performance benefits.  But should node ever
 switch to implementing its Buffer operations natively, this
-implementation will get a speed up.
+module should get a speed boost.
 
 ## Limitations
 
 As JavaScript uses IEEE754 doubles for numbers, the contiguous range
 of integers it can represent is [-2^53 - 1, 2^53 - 1].  So only
-integer widths up to 6 bytes or 48 bits can be safely read and
-written.  The buffer-more-ints functions will throw and exception if
-you try to read or write an integer outside this range.  The
-consequence of this is that you can't read or write 7 or 8 byte
-integers with their higher bits set (or clear for negative numbers).
+integer widths up to 6 bytes or 48 bits can be read exactly.  Reads of
+7 or 8 bytes (56 or 64 bits) will return the closest value that can be
+represented as a JavaScript number.
 
-There's currently no way to avoid this behaviour.  I'm still making up
-my mind about what the default behaviour should be, and how the
-alternative behaviour should be selected (another flag argument?
-separate functions?).
+In certain situations it might be important to check that a JavaScript
+number was read exactly.  The `Buffer.isContiguousInt` function will
+determine this:
 
+    > Buffer.isContiguousInt(0x1fffffffffffff);
+    true
+    > Buffer.isContiguousInt(0x20000000000000);
+    false
+
+And `Buffer.assertContiguousInt` asserts that a number is so:
+
+    > Buffer.assertContiguousInt(0x1fffffffffffff);
+    undefined
+    > Buffer.assertContiguousInt(0x20000000000000);
+    AssertionError: number cannot be represented as a contiguous integer
