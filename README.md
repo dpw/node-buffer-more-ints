@@ -9,7 +9,7 @@ same arguments as the standard ones on Buffer:
     $ node
     > var moreints = require('buffer-more-ints')
     {}
-    > moreints.readInt64BE(new Buffer("0000deadbeef0000", "hex")).toString(16)
+    > moreints.readInt64BE(new Buffer("0000deadbeef0000", "hex"), 0).toString(16)
     'deadbeef0000'
 
 The additional functions will be patched into `Buffer.prototype` if
@@ -18,7 +18,7 @@ you require `'buffer-more-ints/polyfill'`:
     $ node
     > require('buffer-more-ints/polyfill')
     {}
-    > new Buffer("0000deadbeef0000", "hex").readInt64BE().toString(16)
+    > new Buffer("0000deadbeef0000", "hex").readInt64BE(0).toString(16)
     'deadbeef0000'
 
 
