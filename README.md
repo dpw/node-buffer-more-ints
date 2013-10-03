@@ -7,14 +7,24 @@ The functions provided follow the same naming conventions and take the
 same arguments as the standard ones on Buffer:
 
     $ node
-    > require('buffer-more-ints')
+    > var moreints = require('buffer-more-ints')
     {}
-    > new Buffer("0000deadbeef0000", "hex").readInt64BE(0).toString(16)
+    > moreints.readInt64BE(new Buffer("0000deadbeef0000", "hex")).toString(16)
     'deadbeef0000'
 
-buffer-more-ints also adds functions `readIntBE`, `writeIntBE`, and
-their LE and UInt counterparts, which take an initial argument giving
-the width of the integer in bytes:
+The additional functions will be patched into `Buffer.prototype` if
+you require `'buffer-more-ints/polyfill'`:
+
+    $ node
+    > require('buffer-more-ints/polyfill')
+    {}
+    > new Buffer("0000deadbeef0000", "hex").readInt64BE().toString(16)
+    'deadbeef0000'
+
+
+buffer-more-ints/polyfill also adds methods `readIntBE`, `writeIntBE`,
+and their LE and UInt counterparts, which take an initial argument
+giving the width of the integer in bytes:
 
     > var b = new Buffer(3);
     > b.writeIntLE(3, -123456, 0);
@@ -39,15 +49,15 @@ integer widths up to 6 bytes or 48 bits can be read exactly.  Reads of
 represented as a JavaScript number.
 
 In certain situations it might be important to check that a JavaScript
-number was read exactly.  The `Buffer.isContiguousInt` function will
-determine this:
+number was read exactly.  The `isContiguousInt` or
+`Buffer.isContiguousInt` (polyfill) function will determine this:
 
     > Buffer.isContiguousInt(0x1fffffffffffff);
     true
     > Buffer.isContiguousInt(0x20000000000000);
     false
 
-And `Buffer.assertContiguousInt` asserts that a number is so:
+And `assertContiguousInt` asserts that a number is so:
 
     > Buffer.assertContiguousInt(0x1fffffffffffff);
     undefined
