@@ -8,7 +8,7 @@ same arguments as the standard ones on Buffer:
 
     $ node
     > var moreints = require('buffer-more-ints')
-    {}
+    undefined
     > moreints.readInt64BE(new Buffer("0000deadbeef0000", "hex"), 0).toString(16)
     'deadbeef0000'
 
