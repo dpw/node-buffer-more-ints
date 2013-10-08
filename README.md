@@ -1,10 +1,10 @@
 # buffer-more-ints: Add support for more integer widths to Buffer
 
 Node's Buffer only supports reading and writing integers of a limited
-range of widths.  This module extends Buffer with support for more
-widths, so that integers from 1 to 8 bytes (64 bits) can be accessed.
-The functions provided follow the same naming conventions and take the
-same arguments as the standard ones on Buffer:
+range of widths.  This module provides support for more widths, so
+that integers from 1 to 8 bytes (64 bits) can be accessed.  The
+support takes two forms. Firstly, as stand-alone functions similar to
+the integer reading/writing methods of Buffer:
 
     $ node
     > var moreints = require('buffer-more-ints')
@@ -12,8 +12,11 @@ same arguments as the standard ones on Buffer:
     > moreints.readInt64BE(new Buffer("0000deadbeef0000", "hex"), 0).toString(16)
     'deadbeef0000'
 
-The additional functions will be patched into `Buffer.prototype` if
-you require `'buffer-more-ints/polyfill'`:
+Read and write functions for the regular widths (8, 16, 32) are also
+present in this module, for consistency.
+
+The second form is methods patched into `Buffer.prototype`, installed
+by requiring `'buffer-more-ints/polyfill'`:
 
     $ node
     > require('buffer-more-ints/polyfill')

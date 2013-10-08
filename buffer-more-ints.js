@@ -20,6 +20,30 @@ function assertContiguousInt(val) {
 module.exports.isContiguousInt = isContiguousInt;
 module.exports.assertContiguousInt = assertContiguousInt;
 
+// Fill in the regular procedures
+['UInt', 'Int'].forEach(function (sign) {
+  var suffix = sign + '8';
+  module.exports['read' + suffix] =
+    Buffer.prototype['read' + suffix].call;
+  module.exports['write' + suffix] =
+    Buffer.prototype['write' + suffix].call;
+  
+  ['16', '32'].forEach(function (size) {
+    ['LE', 'BE'].forEach(function (endian) {
+      var suffix = sign + size + endian;
+      var read = Buffer.prototype['read' + suffix];
+      module.exports['read' + suffix] =
+        function (buf, offset, noAssert) {
+          return read.call(buf, offset, noAssert);
+        };
+      var write = Buffer.prototype['write' + suffix];
+      module.exports['write' + suffix] =
+        function (buf, val, offset, noAssert) {
+          return write.call(buf, val, offset, noAssert);
+        };
+    });
+  });
+});
 
 // Check that a value is an integer within the given range
 function check_int(val, min, max) {
