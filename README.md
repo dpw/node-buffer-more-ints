@@ -1,20 +1,33 @@
 # buffer-more-ints: Add support for more integer widths to Buffer
 
 Node's Buffer only supports reading and writing integers of a limited
-range of widths.  This module extends Buffer with support for more
-widths, so that integers from 1 to 8 bytes (64 bits) can be accessed.
-The functions provided follow the same naming conventions and take the
-same arguments as the standard ones on Buffer:
+range of widths.  This module provides support for more widths, so
+that integers from 1 to 8 bytes (64 bits) can be accessed.  The
+support takes two forms. Firstly, as stand-alone functions similar to
+the integer reading/writing methods of Buffer:
 
     $ node
-    > require('buffer-more-ints')
+    > var moreints = require('buffer-more-ints')
+    undefined
+    > moreints.readInt64BE(new Buffer("0000deadbeef0000", "hex"), 0).toString(16)
+    'deadbeef0000'
+
+Read and write functions for the regular widths (8, 16, 32) are also
+present in this module, for consistency.
+
+The second form is methods patched into `Buffer.prototype`, installed
+by requiring `'buffer-more-ints/polyfill'`:
+
+    $ node
+    > require('buffer-more-ints/polyfill')
     {}
     > new Buffer("0000deadbeef0000", "hex").readInt64BE(0).toString(16)
     'deadbeef0000'
 
-buffer-more-ints also adds functions `readIntBE`, `writeIntBE`, and
-their LE and UInt counterparts, which take an initial argument giving
-the width of the integer in bytes:
+
+buffer-more-ints/polyfill also adds methods `readIntBE`, `writeIntBE`,
+and their LE and UInt counterparts, which take an initial argument
+giving the width of the integer in bytes:
 
     > var b = new Buffer(3);
     > b.writeIntLE(3, -123456, 0);
@@ -39,15 +52,15 @@ integer widths up to 6 bytes or 48 bits can be read exactly.  Reads of
 represented as a JavaScript number.
 
 In certain situations it might be important to check that a JavaScript
-number was read exactly.  The `Buffer.isContiguousInt` function will
-determine this:
+number was read exactly.  The `isContiguousInt` or
+`Buffer.isContiguousInt` (polyfill) function will determine this:
 
     > Buffer.isContiguousInt(0x1fffffffffffff);
     true
     > Buffer.isContiguousInt(0x20000000000000);
     false
 
-And `Buffer.assertContiguousInt` asserts that a number is so:
+And `assertContiguousInt` asserts that a number is so:
 
     > Buffer.assertContiguousInt(0x1fffffffffffff);
     undefined
