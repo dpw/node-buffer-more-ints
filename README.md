@@ -24,7 +24,6 @@ by requiring `'buffer-more-ints/polyfill'`:
     > new Buffer("0000deadbeef0000", "hex").readInt64BE(0).toString(16)
     'deadbeef0000'
 
-
 buffer-more-ints/polyfill also adds methods `readIntBE`, `writeIntBE`,
 and their LE and UInt counterparts, which take an initial argument
 giving the width of the integer in bytes:
