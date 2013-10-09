@@ -1,6 +1,6 @@
 {
     "name": "buffer-more-ints",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "author": "David Wragg <david@wragg.org>",
     "description": "Add support for more integer widths to Buffer",
     "homepage": "https://github.com/dpw/node-buffer-more-ints",
