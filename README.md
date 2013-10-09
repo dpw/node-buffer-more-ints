@@ -1,5 +1,7 @@
 # buffer-more-ints: Add support for more integer widths to Buffer
 
+[![Build Status](https://travis-ci.org/dpw/node-buffer-more-ints.png)](https://travis-ci.org/dpw/node-buffer-more-ints)
+
 Node's Buffer only supports reading and writing integers of a limited
 range of widths.  This module provides support for more widths, so
 that integers from 1 to 8 bytes (64 bits) can be accessed.  The
