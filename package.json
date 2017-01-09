@@ -4,6 +4,7 @@
     "author": "David Wragg <david@wragg.org>",
     "description": "Add support for more integer widths to Buffer",
     "homepage": "https://github.com/dpw/node-buffer-more-ints",
+    "license": "MIT",
     "repository": {
         "type": "git",
         "url": "https://github.com/dpw/node-buffer-more-ints.git"
