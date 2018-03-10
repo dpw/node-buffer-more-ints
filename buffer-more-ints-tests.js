@@ -50,11 +50,11 @@ function xint_case(xint) {
         }
 
         var buf2 = scrub(new Buffer(len));
-        buf2[writeBE](len, val, -1, true);
+        buf2[writeBE](len, val, -1);
         assert.equal(buf2.slice(0, len-1).toString("hex"),
                      buf.slice(1, len).toString("hex"));
         scrub(buf2);
-        buf2[writeBE](len, val, 1, true);
+        buf2[writeBE](len, val, 1);
         assert.equal(buf2.slice(1, len).toString("hex"),
                      buf.slice(0, len-1).toString("hex"));
 
@@ -67,11 +67,11 @@ function xint_case(xint) {
         }
 
         scrub(buf2);
-        buf2[writeLE](len, val, -1, true);
+        buf2[writeLE](len, val, -1);
         assert.equal(buf2.slice(0, len-1).toString("hex"),
                      buf.slice(1, len).toString("hex"));
         scrub(buf2);
-        buf2[writeLE](len, val, 1, true);
+        buf2[writeLE](len, val, 1);
         assert.equal(buf2.slice(1, len).toString("hex"),
                      buf.slice(0, len-1).toString("hex"));
 
@@ -84,12 +84,12 @@ function xint_case(xint) {
 
         // Test noAssert reads that stray off the ends of the buffer.
         var expect = h2b("00"+hex)[readBE](len, 0);
-        assert.equal(h2b(hex)[readBE](len, -1, true), expect);
-        assert.equals(reverse(h2b(hex))[readLE](len, 1, true), expect);
+        assert.equal(h2b(hex)[readBE](len, -1), expect);
+        assert.equals(reverse(h2b(hex))[readLE](len, 1), expect);
 
         expect = h2b(hex+"00")[readBE](len, 1);
-        assert.equal(h2b(hex)[readBE](len, 1, true), expect);
-        assert.equal(reverse(h2b(hex))[readLE](len, -1, true), expect);
+        assert.equal(h2b(hex)[readBE](len, 1), expect);
+        assert.equal(reverse(h2b(hex))[readLE](len, -1), expect);
     };
 }
 
