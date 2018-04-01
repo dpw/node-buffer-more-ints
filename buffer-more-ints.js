@@ -1,7 +1,5 @@
 'use strict';
 
-var assert = require("assert");
-
 // JavaScript is numerically challenged
 var SHIFT_LEFT_32 = (1 << 16) * (1 << 16);
 var SHIFT_RIGHT_32 = 1 / SHIFT_LEFT_32;
@@ -14,7 +12,9 @@ function isContiguousInt(val) {
 }
 
 function assertContiguousInt(val) {
-    assert(isContiguousInt(val), "number cannot be represented as a contiguous integer");
+    if (!isContiguousInt(val)) {
+        throw new TypeError("number cannot be represented as a contiguous integer");
+    }
 }
 
 module.exports.isContiguousInt = isContiguousInt;
@@ -46,8 +46,19 @@ module.exports.assertContiguousInt = assertContiguousInt;
 });
 
 // Check that a value is an integer within the given range
-function check_int(val, min, max) {
-    assert.ok(typeof(val) == 'number' && val >= min && val <= max && Math.floor(val) === val, "not a number in the required range");
+function check_value(val, min, max) {
+    val = +val;
+    if (typeof(val) != 'number' || val < min || val > max || Math.floor(val) !== val) {
+        throw new TypeError("\"value\" argument is out of bounds");
+    }
+    return val;
+}
+
+// Check that something is within the Buffer bounds
+function check_bounds(buf, offset, len) {
+    if (offset < 0 || offset + len > buf.length) {
+        throw new RangeError("Index out of range");
+    }
 }
 
 function readUInt24BE(buf, offset) {
@@ -56,8 +67,8 @@ function readUInt24BE(buf, offset) {
 module.exports.readUInt24BE = readUInt24BE;
 
 function writeUInt24BE(buf, val, offset) {
-    check_int(val, 0, 0xffffff);
-    assert.ok(offset + 3 <= buf.length, "attempt to write beyond end of buffer");
+    val = check_value(val, 0, 0xffffff);
+    check_bounds(buf, offset, 3);
     buf.writeUInt8(val >>> 16, offset);
     buf.writeUInt16BE(val & 0xffff, offset + 1);
 }
@@ -69,8 +80,8 @@ function readUInt40BE(buf, offset) {
 module.exports.readUInt40BE = readUInt40BE;
 
 function writeUInt40BE(buf, val, offset) {
-    check_int(val, 0, 0xffffffffff);
-    assert.ok(offset + 5 <= buf.length, "attempt to write beyond end of buffer");
+    val = check_value(val, 0, 0xffffffffff);
+    check_bounds(buf, offset, 5);
     buf.writeUInt8(Math.floor(val * SHIFT_RIGHT_32), offset);
     buf.writeInt32BE(val & -1, offset + 1);
 }
@@ -82,8 +93,8 @@ function readUInt48BE(buf, offset) {
 module.exports.readUInt48BE = readUInt48BE;
 
 function writeUInt48BE(buf, val, offset) {
-    check_int(val, 0, 0xffffffffffff);
-    assert.ok(offset + 6 <= buf.length, "attempt to write beyond end of buffer");
+    val = check_value(val, 0, 0xffffffffffff);
+    check_bounds(buf, offset, 6);
     buf.writeUInt16BE(Math.floor(val * SHIFT_RIGHT_32), offset);
     buf.writeInt32BE(val & -1, offset + 2);
 }
@@ -95,8 +106,8 @@ function readUInt56BE(buf, offset) {
 module.exports.readUInt56BE = readUInt56BE;
 
 function writeUInt56BE(buf, val, offset) {
-    check_int(val, 0, 0xffffffffffffff);
-    assert.ok(offset + 7 <= buf.length, "attempt to write beyond end of buffer");
+    val = check_value(val, 0, 0xffffffffffffff);
+    check_bounds(buf, offset, 7);
 
     if (val < 0x100000000000000) {
         var hi = Math.floor(val * SHIFT_RIGHT_32);
@@ -122,8 +133,8 @@ function readUInt64BE(buf, offset) {
 module.exports.readUInt64BE = readUInt64BE;
 
 function writeUInt64BE(buf, val, offset) {
-    check_int(val, 0, 0xffffffffffffffff);
-    assert.ok(offset + 8 <= buf.length, "attempt to write beyond end of buffer");
+    val = check_value(val, 0, 0xffffffffffffffff);
+    check_bounds(buf, offset, 8);
 
     if (val < 0x10000000000000000) {
         buf.writeUInt32BE(Math.floor(val * SHIFT_RIGHT_32), offset);
@@ -148,8 +159,8 @@ function readUInt24LE(buf, offset) {
 module.exports.readUInt24LE = readUInt24LE;
 
 function writeUInt24LE(buf, val, offset) {
-    check_int(val, 0, 0xffffff);
-    assert.ok(offset + 3 <= buf.length, "attempt to write beyond end of buffer");
+    val = check_value(val, 0, 0xffffff);
+    check_bounds(buf, offset, 3);
 
     buf.writeUInt16LE(val & 0xffff, offset);
     buf.writeUInt8(val >>> 16, offset + 2);
@@ -162,8 +173,8 @@ function readUInt40LE(buf, offset) {
 module.exports.readUInt40LE = readUInt40LE;
 
 function writeUInt40LE(buf, val, offset) {
-    check_int(val, 0, 0xffffffffff);
-    assert.ok(offset + 5 <= buf.length, "attempt to write beyond end of buffer");
+    val = check_value(val, 0, 0xffffffffff);
+    check_bounds(buf, offset, 5);
     buf.writeInt32LE(val & -1, offset);
     buf.writeUInt8(Math.floor(val * SHIFT_RIGHT_32), offset + 4);
 }
@@ -175,8 +186,8 @@ function readUInt48LE(buf, offset) {
 module.exports.readUInt48LE = readUInt48LE;
 
 function writeUInt48LE(buf, val, offset) {
-    check_int(val, 0, 0xffffffffffff);
-    assert.ok(offset + 6 <= buf.length, "attempt to write beyond end of buffer");
+    val = check_value(val, 0, 0xffffffffffff);
+    check_bounds(buf, offset, 6);
     buf.writeInt32LE(val & -1, offset);
     buf.writeUInt16LE(Math.floor(val * SHIFT_RIGHT_32), offset + 4);
 }
@@ -188,8 +199,8 @@ function readUInt56LE(buf, offset) {
 module.exports.readUInt56LE = readUInt56LE;
 
 function writeUInt56LE(buf, val, offset) {
-    check_int(val, 0, 0xffffffffffffff);
-    assert.ok(offset + 7 <= buf.length, "attempt to write beyond end of buffer");
+    val = check_value(val, 0, 0xffffffffffffff);
+    check_bounds(buf, offset, 7);
 
     if (val < 0x100000000000000) {
         buf.writeInt32LE(val & -1, offset);
@@ -215,8 +226,8 @@ function readUInt64LE(buf, offset) {
 module.exports.readUInt64LE = readUInt64LE;
 
 function writeUInt64LE(buf, val, offset) {
-    check_int(val, 0, 0xffffffffffffffff);
-    assert.ok(offset + 8 <= buf.length, "attempt to write beyond end of buffer");
+    val = check_value(val, 0, 0xffffffffffffffff);
+    check_bounds(buf, offset, 8);
 
     if (val < 0x10000000000000000) {
         buf.writeInt32LE(val & -1, offset);
@@ -242,8 +253,8 @@ function readInt24BE(buf, offset) {
 module.exports.readInt24BE = readInt24BE;
 
 function writeInt24BE(buf, val, offset) {
-    check_int(val, -0x800000, 0x7fffff);
-    assert.ok(offset + 3 <= buf.length, "attempt to write beyond end of buffer");
+    val = check_value(val, -0x800000, 0x7fffff);
+    check_bounds(buf, offset, 3);
     buf.writeInt8(val >> 16, offset);
     buf.writeUInt16BE(val & 0xffff, offset + 1);
 }
@@ -255,8 +266,8 @@ function readInt40BE(buf, offset) {
 module.exports.readInt40BE = readInt40BE;
 
 function writeInt40BE(buf, val, offset) {
-    check_int(val, -0x8000000000, 0x7fffffffff);
-    assert.ok(offset + 5 <= buf.length, "attempt to write beyond end of buffer");
+    val = check_value(val, -0x8000000000, 0x7fffffffff);
+    check_bounds(buf, offset, 5);
     buf.writeInt8(Math.floor(val * SHIFT_RIGHT_32), offset);
     buf.writeInt32BE(val & -1, offset + 1);
 }
@@ -268,8 +279,8 @@ function readInt48BE(buf, offset) {
 module.exports.readInt48BE = readInt48BE;
 
 function writeInt48BE(buf, val, offset) {
-    check_int(val, -0x800000000000, 0x7fffffffffff);
-    assert.ok(offset + 6 <= buf.length, "attempt to write beyond end of buffer");
+    val = check_value(val, -0x800000000000, 0x7fffffffffff);
+    check_bounds(buf, offset, 6);
     buf.writeInt16BE(Math.floor(val * SHIFT_RIGHT_32), offset);
     buf.writeInt32BE(val & -1, offset + 2);
 }
@@ -281,8 +292,8 @@ function readInt56BE(buf, offset) {
 module.exports.readInt56BE = readInt56BE;
 
 function writeInt56BE(buf, val, offset) {
-    check_int(val, -0x800000000000000, 0x7fffffffffffff);
-    assert.ok(offset + 7 <= buf.length, "attempt to write beyond end of buffer");
+    val = check_value(val, -0x800000000000000, 0x7fffffffffffff);
+    check_bounds(buf, offset, 7);
 
     if (val < 0x80000000000000) {
         var hi = Math.floor(val * SHIFT_RIGHT_32);
@@ -308,8 +319,8 @@ function readInt64BE(buf, offset) {
 module.exports.readInt64BE = readInt64BE;
 
 function writeInt64BE(buf, val, offset) {
-    check_int(val, -0x800000000000000000, 0x7fffffffffffffff);
-    assert.ok(offset + 8 <= buf.length, "attempt to write beyond end of buffer");
+    val = check_value(val, -0x800000000000000000, 0x7fffffffffffffff);
+    check_bounds(buf, offset, 8);
 
     if (val < 0x8000000000000000) {
         buf.writeInt32BE(Math.floor(val * SHIFT_RIGHT_32), offset);
@@ -334,8 +345,8 @@ function readInt24LE(buf, offset) {
 module.exports.readInt24LE = readInt24LE;
 
 function writeInt24LE(buf, val, offset) {
-    check_int(val, -0x800000, 0x7fffff);
-    assert.ok(offset + 3 <= buf.length, "attempt to write beyond end of buffer");
+    val = check_value(val, -0x800000, 0x7fffff);
+    check_bounds(buf, offset, 3);
     buf.writeUInt16LE(val & 0xffff, offset);
     buf.writeInt8(val >> 16, offset + 2);
 }
@@ -347,8 +358,8 @@ function readInt40LE(buf, offset) {
 module.exports.readInt40LE = readInt40LE;
 
 function writeInt40LE(buf, val, offset) {
-    check_int(val, -0x8000000000, 0x7fffffffff);
-    assert.ok(offset + 5 <= buf.length, "attempt to write beyond end of buffer");
+    val = check_value(val, -0x8000000000, 0x7fffffffff);
+    check_bounds(buf, offset, 5);
     buf.writeInt32LE(val & -1, offset);
     buf.writeInt8(Math.floor(val * SHIFT_RIGHT_32), offset + 4);
 }
@@ -360,8 +371,8 @@ function readInt48LE(buf, offset) {
 module.exports.readInt48LE = readInt48LE;
 
 function writeInt48LE(buf, val, offset) {
-    check_int(val, -0x800000000000, 0x7fffffffffff);
-    assert.ok(offset + 6 <= buf.length, "attempt to write beyond end of buffer");
+    val = check_value(val, -0x800000000000, 0x7fffffffffff);
+    check_bounds(buf, offset, 6);
     buf.writeInt32LE(val & -1, offset);
     buf.writeInt16LE(Math.floor(val * SHIFT_RIGHT_32), offset + 4);
 }
@@ -373,8 +384,8 @@ function readInt56LE(buf, offset) {
 module.exports.readInt56LE = readInt56LE;
 
 function writeInt56LE(buf, val, offset) {
-    check_int(val, -0x80000000000000, 0x7fffffffffffff);
-    assert.ok(offset + 7 <= buf.length, "attempt to write beyond end of buffer");
+    val = check_value(val, -0x80000000000000, 0x7fffffffffffff);
+    check_bounds(buf, offset, 7);
 
     if (val < 0x80000000000000) {
         buf.writeInt32LE(val & -1, offset);
@@ -400,8 +411,8 @@ function readInt64LE(buf, offset) {
 module.exports.readInt64LE = readInt64LE;
 
 function writeInt64LE(buf, val, offset) {
-    check_int(val, -0x8000000000000000, 0x7fffffffffffffff);
-    assert.ok(offset + 8 <= buf.length, "attempt to write beyond end of buffer");
+    val = check_value(val, -0x8000000000000000, 0x7fffffffffffffff);
+    check_bounds(buf, offset, 8);
 
     if (val < 0x8000000000000000) {
         buf.writeInt32LE(val & -1, offset);

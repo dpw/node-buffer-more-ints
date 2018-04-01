@@ -57,12 +57,15 @@ function xint_case(xint) {
             assert.equal(buf[readLE](len, 0), val);
         }
 
-        // Accesses off the end of the buffer should throw. Node
-        // doesn't catch negative offsets.
-        assert.throws(function () { h2b(hex)[readBE](len, 1); })
-        assert.throws(function () { reverse(h2b(hex))[readLE](len, 1); })
+        // Accesses off the ends of the buffer should throw.
+        assert.throws(function () { h2b(hex)[readBE](len, -1); });
+        assert.throws(function () { h2b(hex)[readBE](len, 1); });
+        assert.throws(function () { reverse(h2b(hex))[readLE](len, 1); });
+        assert.throws(function () { reverse(h2b(hex))[readLE](len, -1); });
         assert.throws(function () { buf[writeBE](len, val, 1); });
+        assert.throws(function () { buf[writeBE](len, val, -1); });
         assert.throws(function () { buf[writeLE](len, val, 1); });
+        assert.throws(function () { buf[writeLE](len, val, -1); });
     };
 }
 
