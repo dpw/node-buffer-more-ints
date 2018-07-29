@@ -1,5 +1,7 @@
 'use strict';
 
+var Buffer = require('safe-buffer').Buffer;
+
 // JavaScript is numerically challenged
 var SHIFT_LEFT_32 = (1 << 16) * (1 << 16);
 var SHIFT_RIGHT_32 = 1 / SHIFT_LEFT_32;
